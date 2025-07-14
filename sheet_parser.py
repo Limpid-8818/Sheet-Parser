@@ -64,14 +64,14 @@ class SheetParser:
         wb = load_workbook(file_path, read_only=True, data_only=True)
 
         for sheet_name in sheet_names:
-            df = xls.parse(sheet_name)
+            df = xls.parse(sheet_name, header=None)
 
             # 处理空数据框
             if df.empty:
                 sheets_data.append({
                     'name': sheet_name,
-                    'data': [],
-                    'merged_cells': []
+                    'header': [],
+                    'data': []
                 })
                 continue
 
@@ -88,9 +88,51 @@ class SheetParser:
                         'max_col': max_col - 1
                     })
 
-            # 处理数据类型和空值
+            # 处理表头行
+            header_row = df.iloc[0].tolist()
+            processed_header = []
+            for col_idx, value in enumerate(header_row):
+                # 处理NaN值
+                if pd.isna(value):
+                    cell_value = ''
+                    cell_type = 'string'
+                else:
+                    # 确定数据类型
+                    cell_type = determine_data_type(value)
+                    # 格式化日期
+                    if cell_type == 'date':
+                        cell_value = value.strftime('%Y-%m-%d')
+                    else:
+                        cell_value = str(value)
+
+                # 检查是否为合并单元格
+                is_merged = False
+                for merged_cell in merged_cells:
+                    if merged_cell['min_row'] == 0 and col_idx >= merged_cell['min_col'] and col_idx <= merged_cell[
+                        'max_col']:
+                        # 只有左上角的单元格显示内容
+                        if col_idx == merged_cell['min_col']:
+                            is_merged = True
+                            processed_header.append({
+                                'value': cell_value,
+                                'type': cell_type,
+                                'colspan': merged_cell['max_col'] - merged_cell['min_col'] + 1,
+                                'is_merged': True
+                            })
+                        break
+
+                # 如果不是合并单元格或合并单元格的左上角
+                if not is_merged:
+                    processed_header.append({
+                        'value': cell_value,
+                        'type': cell_type,
+                        'colspan': 1,
+                        'is_merged': False
+                    })
+
+            # 处理数据行
             data = []
-            for row_idx, row in df.iterrows():
+            for row_idx, row in enumerate(df.iloc[1:].itertuples(index=False), 1):
                 processed_row = []
                 for col_idx, value in enumerate(row):
                     # 处理NaN值
@@ -147,8 +189,8 @@ class SheetParser:
 
             sheets_data.append({
                 'name': sheet_name,
-                'data': data,
-                'merged_cells': merged_cells
+                'header': processed_header,
+                'data': data
             })
 
         return sheets_data
@@ -160,29 +202,48 @@ class SheetParser:
         # 读取CSV文件
         with open(file_path, 'r', encoding='utf-8-sig') as f:
             reader = csv.reader(f)
-            data = []
+            rows = list(reader)
 
-            for row_idx, row in enumerate(reader):
-                processed_row = []
-                for col_idx, value in enumerate(row):
-                    # 确定数据类型
-                    cell_type = determine_data_type(value)
+        if not rows:
+            sheets_data.append({
+                'name': os.path.basename(file_path),
+                'header': [],
+                'data': []
+            })
+            return sheets_data
 
-                    processed_row.append({
-                        'value': value,
-                        'type': cell_type,
-                        'rowspan': 1,
-                        'colspan': 1,
-                        'is_merged': False
-                    })
+        # 处理表头
+        header_row = rows[0]
+        processed_header = []
+        for col_idx, value in enumerate(header_row):
+            cell_type = determine_data_type(value)
+            processed_header.append({
+                'value': value,
+                'type': cell_type,
+                'colspan': 1,
+                'is_merged': False
+            })
 
-                data.append(processed_row)
+        # 处理数据行
+        data = []
+        for row_idx, row in enumerate(rows[1:], 1):
+            processed_row = []
+            for col_idx, value in enumerate(row):
+                cell_type = determine_data_type(value)
+                processed_row.append({
+                    'value': value,
+                    'type': cell_type,
+                    'rowspan': 1,
+                    'colspan': 1,
+                    'is_merged': False
+                })
+            data.append(processed_row)
 
         # CSV文件只有一个工作表
         sheets_data.append({
             'name': os.path.basename(file_path),
-            'data': data,
-            'merged_cells': []  # CSV不支持合并单元格
+            'header': processed_header,
+            'data': data
         })
 
         return sheets_data
@@ -193,6 +254,7 @@ class SheetParser:
 
         for sheet in sheets_data:
             sheet_name = sheet['name']
+            header = sheet['header']
             sheet_data = sheet['data']
 
             # 生成表格HTML
@@ -200,36 +262,31 @@ class SheetParser:
             table_html += f'<h2 class="sheet-title">{sheet_name}</h2>'
             table_html += '<table class="sheet-table">'
 
-            # 生成表头（假设第一行为表头）
-            if sheet_data:
-                table_html += '<thead><tr>'
-                header_row = sheet_data[0]
-                for cell in header_row:
+            # 生成表头
+            table_html += '<thead><tr>'
+            for cell in header:
+                cell_class = ''
+                if cell['is_merged']:
+                    cell_class = 'merged-cell'
+
+                table_html += f'<th colspan="{cell["colspan"]}" class="{cell_class}">{cell["value"]}</th>'
+
+            table_html += '</tr></thead><tbody>'
+
+            # 生成表格内容
+            for row_idx, row in enumerate(sheet_data):
+                table_html += '<tr>'
+                for cell in row:
                     if 'skip' in cell and cell['skip']:
                         continue
 
-                    cell_class = ''
+                    cell_class = cell['type'] + '-cell'
                     if cell['is_merged']:
-                        cell_class = 'merged-cell'
+                        cell_class += ' merged-cell'
 
-                    table_html += f'<th colspan="{cell["colspan"]}" rowspan="{cell["rowspan"]}" class="{cell_class}">{cell["value"]}</th>'
+                    table_html += f'<td colspan="{cell["colspan"]}" rowspan="{cell["rowspan"]}" class="{cell_class}">{cell["value"]}</td>'
 
-                table_html += '</tr></thead><tbody>'
-
-                # 生成表格内容（从第二行开始）
-                for row_idx, row in enumerate(sheet_data[1:], 1):
-                    table_html += '<tr>'
-                    for cell in row:
-                        if 'skip' in cell and cell['skip']:
-                            continue
-
-                        cell_class = cell['type'] + '-cell'
-                        if cell['is_merged']:
-                            cell_class += ' merged-cell'
-
-                        table_html += f'<td colspan="{cell["colspan"]}" rowspan="{cell["rowspan"]}" class="{cell_class}">{cell["value"]}</td>'
-
-                    table_html += '</tr>'
+                table_html += '</tr>'
 
             table_html += '</tbody></table></div>'
             content += table_html
