@@ -61,7 +61,7 @@ class SheetParser:
         sheets_data = []
 
         # 使用openpyxl获取合并单元格信息
-        wb = load_workbook(file_path, read_only=True, data_only=True)
+        wb = load_workbook(file_path, data_only=True)
 
         for sheet_name in sheet_names:
             df = xls.parse(sheet_name, header=None)
@@ -88,10 +88,19 @@ class SheetParser:
                         'max_col': max_col - 1
                     })
 
+            # 创建一个二维数组来跟踪哪些单元格已被处理
+            rows_count = df.shape[0]
+            cols_count = df.shape[1] if rows_count > 0 else 0
+            cell_processed = [[False for _ in range(cols_count)] for _ in range(rows_count)]
+
             # 处理表头行
             header_row = df.iloc[0].tolist()
             processed_header = []
             for col_idx, value in enumerate(header_row):
+                # 如果已经处理过，跳过
+                if cell_processed[0][col_idx]:
+                    continue
+
                 # 处理NaN值
                 if pd.isna(value):
                     cell_value = ''
@@ -107,34 +116,35 @@ class SheetParser:
 
                 # 检查是否为合并单元格
                 is_merged = False
+                rowspan = 1
+                colspan = 1
                 for merged_cell in merged_cells:
                     if merged_cell['min_row'] == 0 and col_idx >= merged_cell['min_col'] and col_idx <= merged_cell[
                         'max_col']:
-                        # 只有左上角的单元格显示内容
-                        if col_idx == merged_cell['min_col']:
-                            is_merged = True
-                            processed_header.append({
-                                'value': cell_value,
-                                'type': cell_type,
-                                'colspan': merged_cell['max_col'] - merged_cell['min_col'] + 1,
-                                'is_merged': True
-                            })
+                        is_merged = True
+                        colspan = merged_cell['max_col'] - merged_cell['min_col'] + 1
+                        # 标记整个合并区域为已处理
+                        for c in range(merged_cell['min_col'], merged_cell['max_col'] + 1):
+                            cell_processed[0][c] = True
                         break
 
-                # 如果不是合并单元格或合并单元格的左上角
-                if not is_merged:
-                    processed_header.append({
-                        'value': cell_value,
-                        'type': cell_type,
-                        'colspan': 1,
-                        'is_merged': False
-                    })
+                processed_header.append({
+                    'value': cell_value,
+                    'type': cell_type,
+                    'colspan': colspan,
+                    'rowspan': rowspan,
+                    'is_merged': is_merged
+                })
 
             # 处理数据行
             data = []
             for row_idx, row in enumerate(df.iloc[1:].itertuples(index=False), 1):
                 processed_row = []
                 for col_idx, value in enumerate(row):
+                    # 如果已经处理过，跳过
+                    if cell_processed[row_idx][col_idx]:
+                        continue
+
                     # 处理NaN值
                     if pd.isna(value):
                         cell_value = ''
@@ -150,40 +160,27 @@ class SheetParser:
 
                     # 检查是否为合并单元格
                     is_merged = False
+                    rowspan = 1
+                    colspan = 1
                     for merged_cell in merged_cells:
                         if (row_idx >= merged_cell['min_row'] and row_idx <= merged_cell['max_row'] and
                                 col_idx >= merged_cell['min_col'] and col_idx <= merged_cell['max_col']):
-                            # 只有左上角的单元格显示内容
-                            if row_idx == merged_cell['min_row'] and col_idx == merged_cell['min_col']:
-                                is_merged = True
-                                processed_row.append({
-                                    'value': cell_value,
-                                    'type': cell_type,
-                                    'rowspan': merged_cell['max_row'] - merged_cell['min_row'] + 1,
-                                    'colspan': merged_cell['max_col'] - merged_cell['min_col'] + 1,
-                                    'is_merged': True
-                                })
-                            else:
-                                # 其他合并单元格位置设置为空
-                                processed_row.append({
-                                    'value': '',
-                                    'type': 'string',
-                                    'rowspan': 1,
-                                    'colspan': 1,
-                                    'is_merged': False,
-                                    'skip': True  # 标记为跳过渲染
-                                })
+                            is_merged = True
+                            rowspan = merged_cell['max_row'] - merged_cell['min_row'] + 1
+                            colspan = merged_cell['max_col'] - merged_cell['min_col'] + 1
+                            # 标记整个合并区域为已处理
+                            for r in range(merged_cell['min_row'], merged_cell['max_row'] + 1):
+                                for c in range(merged_cell['min_col'], merged_cell['max_col'] + 1):
+                                    cell_processed[r][c] = True
                             break
 
-                    # 如果不是合并单元格或合并单元格的左上角
-                    if not is_merged:
-                        processed_row.append({
-                            'value': cell_value,
-                            'type': cell_type,
-                            'rowspan': 1,
-                            'colspan': 1,
-                            'is_merged': False
-                        })
+                    processed_row.append({
+                        'value': cell_value,
+                        'type': cell_type,
+                        'rowspan': rowspan,
+                        'colspan': colspan,
+                        'is_merged': is_merged
+                    })
 
                 data.append(processed_row)
 
