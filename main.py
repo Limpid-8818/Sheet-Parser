@@ -1,5 +1,6 @@
 from sheet_parser import SheetParser
 
+
 def main():
     parser = SheetParser()
 
@@ -9,6 +10,7 @@ def main():
         print("Excel文件解析完成")
     except Exception as e:
         print(f"解析Excel文件时出错: {e}")
+
 
 if __name__ == "__main__":
     main()
