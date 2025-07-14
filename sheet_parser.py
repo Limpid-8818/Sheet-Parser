@@ -71,7 +71,6 @@ class SheetParser:
             if df.empty:
                 sheets_data.append({
                     'name': sheet_name,
-                    'header': [],
                     'data': []
                 })
                 continue
@@ -99,56 +98,9 @@ class SheetParser:
                 if 0 <= row < rows_count and 0 <= col < cols_count:
                     cell_processed[row][col] = True
 
-            # 处理表头行
-            header_row = df.iloc[0].tolist()
-            processed_header = []
-            for col_idx, value in enumerate(header_row):
-                # 如果已经处理过，跳过
-                if col_idx >= cols_count or cell_processed[0][col_idx]:
-                    continue
-
-                # 处理NaN值
-                if pd.isna(value):
-                    cell_value = ''
-                    cell_type = 'string'
-                else:
-                    # 确定数据类型
-                    cell_type = determine_data_type(value)
-                    # 格式化日期
-                    if cell_type == 'date':
-                        cell_value = value.strftime('%Y-%m-%d')
-                    else:
-                        cell_value = str(value)
-
-                # 检查是否为合并单元格
-                is_merged = False
-                rowspan = 1
-                colspan = 1
-                for merged_cell in merged_cells:
-                    if merged_cell['min_row'] == 0 and col_idx >= merged_cell['min_col'] and col_idx <= merged_cell[
-                        'max_col']:
-                        is_merged = True
-                        colspan = merged_cell['max_col'] - merged_cell['min_col'] + 1
-                        # 标记整个合并区域为已处理
-                        for c in range(merged_cell['min_col'], merged_cell['max_col'] + 1):
-                            mark_cell_processed(0, c)
-                        break
-
-                # 获取单元格样式
-                cell_style = self._get_cell_style(ws.cell(row=1, column=col_idx + 1))
-
-                processed_header.append({
-                    'value': cell_value,
-                    'type': cell_type,
-                    'colspan': colspan,
-                    'rowspan': rowspan,
-                    'is_merged': is_merged,
-                    'style': cell_style
-                })
-
-            # 处理数据行
+            # 处理所有行（包括表头）
             data = []
-            for row_idx, row in enumerate(df.iloc[1:].itertuples(index=False), 1):
+            for row_idx, row in enumerate(df.itertuples(index=False)):
                 processed_row = []
                 for col_idx, value in enumerate(row):
                     # 如果已经处理过或超出范围，跳过
@@ -200,7 +152,6 @@ class SheetParser:
 
             sheets_data.append({
                 'name': sheet_name,
-                'header': processed_header,
                 'data': data
             })
 
@@ -268,7 +219,7 @@ class SheetParser:
 
         for sheet in sheets_data:
             sheet_name = sheet['name']
-            header = sheet['header']
+            header = sheet.get('header', [])
             sheet_data = sheet['data']
 
             # 生成表格HTML
@@ -276,20 +227,21 @@ class SheetParser:
             table_html += f'<h2 class="sheet-title">{sheet_name}</h2>'
             table_html += '<table class="sheet-table">'
 
-            # 生成表头
-            table_html += '<thead><tr>'
-            for cell in header:
-                cell_class = ''
-                if cell['is_merged']:
-                    cell_class += ' merged-cell'
-                if cell['type'] == 'numeric':
-                    cell_class += ' numeric-cell'
-                elif cell['type'] == 'date':
-                    cell_class += ' date-cell'
-                elif cell['type'] == 'boolean':
-                    cell_class += ' boolean-cell'
-                table_html += f'<th class="{cell_class.strip()}" colspan="{cell["colspan"]}" rowspan="{cell["rowspan"]}" style="{cell["style"]}">{cell["value"]}</th>'
-            table_html += '</tr></thead>'
+            if header:
+                # 生成表头，考虑到应避免与Excel文件表头行格式产生冲突，此处仅对csv文件生效
+                table_html += '<thead><tr>'
+                for cell in header:
+                    cell_class = ''
+                    if cell['is_merged']:
+                        cell_class += ' merged-cell'
+                    if cell['type'] == 'numeric':
+                        cell_class += ' numeric-cell'
+                    elif cell['type'] == 'date':
+                        cell_class += ' date-cell'
+                    elif cell['type'] == 'boolean':
+                        cell_class += ' boolean-cell'
+                    table_html += f'<th class="{cell_class.strip()}" colspan="{cell["colspan"]}" rowspan="{cell["rowspan"]}" style="{cell["style"]}">{cell["value"]}</th>'
+                table_html += '</tr></thead>'
 
             # 生成数据行
             table_html += '<tbody>'
