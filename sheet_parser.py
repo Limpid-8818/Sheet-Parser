@@ -93,12 +93,17 @@ class SheetParser:
             cols_count = df.shape[1] if rows_count > 0 else 0
             cell_processed = [[False for _ in range(cols_count)] for _ in range(rows_count)]
 
+            # 辅助函数：标记单元格为已处理，避免越界
+            def mark_cell_processed(row, col):
+                if 0 <= row < rows_count and 0 <= col < cols_count:
+                    cell_processed[row][col] = True
+
             # 处理表头行
             header_row = df.iloc[0].tolist()
             processed_header = []
             for col_idx, value in enumerate(header_row):
                 # 如果已经处理过，跳过
-                if cell_processed[0][col_idx]:
+                if col_idx >= cols_count or cell_processed[0][col_idx]:
                     continue
 
                 # 处理NaN值
@@ -125,7 +130,7 @@ class SheetParser:
                         colspan = merged_cell['max_col'] - merged_cell['min_col'] + 1
                         # 标记整个合并区域为已处理
                         for c in range(merged_cell['min_col'], merged_cell['max_col'] + 1):
-                            cell_processed[0][c] = True
+                            mark_cell_processed(0, c)
                         break
 
                 processed_header.append({
@@ -141,8 +146,8 @@ class SheetParser:
             for row_idx, row in enumerate(df.iloc[1:].itertuples(index=False), 1):
                 processed_row = []
                 for col_idx, value in enumerate(row):
-                    # 如果已经处理过，跳过
-                    if cell_processed[row_idx][col_idx]:
+                    # 如果已经处理过或超出范围，跳过
+                    if row_idx >= rows_count or col_idx >= cols_count or cell_processed[row_idx][col_idx]:
                         continue
 
                     # 处理NaN值
@@ -171,7 +176,7 @@ class SheetParser:
                             # 标记整个合并区域为已处理
                             for r in range(merged_cell['min_row'], merged_cell['max_row'] + 1):
                                 for c in range(merged_cell['min_col'], merged_cell['max_col'] + 1):
-                                    cell_processed[r][c] = True
+                                    mark_cell_processed(r, c)
                             break
 
                     processed_row.append({
