@@ -12,7 +12,7 @@ class SheetParser:
 
     def __init__(self):
         """初始化解析器"""
-        self.supported_formats = ['.xlsx', '.xls', '.csv']
+        self.supported_formats = ['.xlsx', '.xls', '.csv', '.xlt', '.xltx', '.xlsb', '.xltm', '.xlam', '.et', '.ett', '.ets']
         self.html_template_path = 'templates/basic_table.html'
         with open(self.html_template_path, 'r', encoding='utf-8') as f:
             self.html_template = Template(f.read())
@@ -37,7 +37,8 @@ class SheetParser:
             title = get_default_title(file_path)
 
         # 根据文件格式选择解析方法
-        if os.path.splitext(file_path)[1].lower() in ['.xlsx', '.xls']:
+        if os.path.splitext(file_path)[1].lower() in ['.xlsx', '.xls', '.xlt', '.xltx', '.xlsb', '.xltm', '.xlam',
+                                                      '.et', '.ett', '.ets']:
             sheets_data = self._parse_excel(file_path)
         elif os.path.splitext(file_path)[1].lower() == '.csv':
             sheets_data = self._parse_csv(file_path)
@@ -133,12 +134,16 @@ class SheetParser:
                             mark_cell_processed(0, c)
                         break
 
+                # 获取单元格样式
+                cell_style = self._get_cell_style(ws.cell(row=1, column=col_idx + 1))
+
                 processed_header.append({
                     'value': cell_value,
                     'type': cell_type,
                     'colspan': colspan,
                     'rowspan': rowspan,
-                    'is_merged': is_merged
+                    'is_merged': is_merged,
+                    'style': cell_style
                 })
 
             # 处理数据行
@@ -179,12 +184,16 @@ class SheetParser:
                                     mark_cell_processed(r, c)
                             break
 
+                    # 获取单元格样式
+                    cell_style = self._get_cell_style(ws.cell(row=row_idx + 1, column=col_idx + 1))
+
                     processed_row.append({
                         'value': cell_value,
                         'type': cell_type,
                         'rowspan': rowspan,
                         'colspan': colspan,
-                        'is_merged': is_merged
+                        'is_merged': is_merged,
+                        'style': cell_style
                     })
 
                 data.append(processed_row)
@@ -223,7 +232,9 @@ class SheetParser:
                 'value': value,
                 'type': cell_type,
                 'colspan': 1,
-                'is_merged': False
+                'rowspan': 1,
+                'is_merged': False,
+                'style': ''
             })
 
         # 处理数据行
@@ -237,7 +248,8 @@ class SheetParser:
                     'type': cell_type,
                     'rowspan': 1,
                     'colspan': 1,
-                    'is_merged': False
+                    'is_merged': False,
+                    'style': ''
                 })
             data.append(processed_row)
 
@@ -269,28 +281,97 @@ class SheetParser:
             for cell in header:
                 cell_class = ''
                 if cell['is_merged']:
-                    cell_class = 'merged-cell'
+                    cell_class += ' merged-cell'
+                if cell['type'] == 'numeric':
+                    cell_class += ' numeric-cell'
+                elif cell['type'] == 'date':
+                    cell_class += ' date-cell'
+                elif cell['type'] == 'boolean':
+                    cell_class += ' boolean-cell'
+                table_html += f'<th class="{cell_class.strip()}" colspan="{cell["colspan"]}" rowspan="{cell["rowspan"]}" style="{cell["style"]}">{cell["value"]}</th>'
+            table_html += '</tr></thead>'
 
-                table_html += f'<th colspan="{cell["colspan"]}" class="{cell_class}">{cell["value"]}</th>'
-
-            table_html += '</tr></thead><tbody>'
-
-            # 生成表格内容
-            for row_idx, row in enumerate(sheet_data):
+            # 生成数据行
+            table_html += '<tbody>'
+            for row in sheet_data:
                 table_html += '<tr>'
                 for cell in row:
-                    if 'skip' in cell and cell['skip']:
-                        continue
-
-                    cell_class = cell['type'] + '-cell'
+                    cell_class = ''
                     if cell['is_merged']:
                         cell_class += ' merged-cell'
-
-                    table_html += f'<td colspan="{cell["colspan"]}" rowspan="{cell["rowspan"]}" class="{cell_class}">{cell["value"]}</td>'
-
+                    if cell['type'] == 'numeric':
+                        cell_class += ' numeric-cell'
+                    elif cell['type'] == 'date':
+                        cell_class += ' date-cell'
+                    elif cell['type'] == 'boolean':
+                        cell_class += ' boolean-cell'
+                    table_html += f'<td class="{cell_class.strip()}" colspan="{cell["colspan"]}" rowspan="{cell["rowspan"]}" style="{cell["style"]}">{cell["value"]}</td>'
                 table_html += '</tr>'
+            table_html += '</tbody>'
 
-            table_html += '</tbody></table></div>'
+            table_html += '</table></div>'
             content += table_html
 
         return content
+
+    def _get_cell_style(self, cell):
+        """获取单元格的样式信息并转换为HTML style属性"""
+        style = []
+
+        # 字体样式
+        font = cell.font
+        if font.bold:
+            style.append('font-weight: bold')
+        if font.italic:
+            style.append('font-style: italic')
+        if font.underline:
+            style.append('text-decoration: underline')
+
+        # 处理字体颜色
+        if font.color and font.color.rgb:
+            color_style = self._get_rgb_style_value(font.color.rgb)
+            if color_style:
+                style.append(f'color: {color_style}')
+
+        if font.size:
+            style.append(f'font-size: {font.size}pt')
+
+        # 单元格背景色
+        fill = cell.fill
+        if fill.patternType and fill.patternType != 'none':
+            bg_style = self._get_rgb_style_value(fill.fgColor.rgb)
+            if bg_style:
+                style.append(f'background-color: {bg_style}')
+
+        # 边框样式
+        border = cell.border
+        for side in ['left', 'right', 'top', 'bottom']:
+            side_obj = getattr(border, side)
+            if side_obj.style:
+                # 处理边框颜色
+                if side_obj.color and side_obj.color.rgb:
+                    border_color = self._get_rgb_style_value(side_obj.color.rgb)
+                    if border_color:
+                        style.append(f'border-{side}: {side_obj.style} {border_color}')
+                    else:
+                        style.append(f'border-{side}: {side_obj.style} black')
+
+        # 对齐方式
+        alignment = cell.alignment
+        if alignment.horizontal:
+            style.append(f'text-align: {alignment.horizontal}')
+        if alignment.vertical:
+            style.append(f'vertical-align: {alignment.vertical}')
+
+        return '; '.join(style)
+
+    def _get_rgb_style_value(self, rgb):
+        """将RGB对象或字符串转换为CSS可用的颜色值"""
+        if rgb is None:
+            return None
+        if hasattr(rgb, 'rgb'):
+            rgb = rgb.rgb  # RGB对象
+        if isinstance(rgb, str) and len(rgb) == 8:
+            # 去掉前两位透明度，取后6位
+            return f"#{rgb[2:]}"
+        return None
