@@ -65,6 +65,7 @@ class SheetParser:
 
         # 使用openpyxl获取合并单元格信息
         wb = load_workbook(file_path, data_only=True)
+        wb_with_formula = load_workbook(file_path, data_only=False)
 
         for sheet_name in sheet_names:
             df = xls.parse(sheet_name, header=None)
@@ -79,6 +80,7 @@ class SheetParser:
 
             # 获取合并单元格信息
             ws = wb[sheet_name]
+            ws_with_formula = wb_with_formula[sheet_name]
             merged_cells = []
             if hasattr(ws, 'merged_cells'):
                 for merged_range in ws.merged_cells.ranges:
@@ -143,13 +145,13 @@ class SheetParser:
                     if hyperlink:
                         cell_value = f'<a href="{hyperlink.target}" target="_blank">{cell_value}</a>'
 
-                    # 1. 检查是否有注释
+                    # 检查是否有注释
                     comment = ws.cell(row=row_idx + 1, column=col_idx + 1).comment
                     comment_text = (comment.text or '').strip() if comment else ''
 
-                    # 2. 只在有注释时才包 <span>
+                    # 只在有注释时才包 <span>
                     if comment_text:
-                        # 先转义引号避免 HTML 注入
+                        # 转义引号避免 HTML 注入
                         safe_comment = html.escape(comment_text, quote=True)
                         cell_value = f'<span class="comment" data-comment="{safe_comment}">{cell_value}</span>'
 
