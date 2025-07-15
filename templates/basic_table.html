@@ -66,6 +66,30 @@
             font-size: 1.5em;
             margin-bottom: 10px;
         }
+
+        .sheet-table td[data-comment] {
+            position: relative;
+            cursor: pointer;
+        }
+
+        .sheet-table td[data-comment]::after {
+            content: attr(data-comment);
+            position: absolute;
+            background: #333;
+            color: #fff;
+            padding: 4px 6px;
+            border-radius: 3px;
+            font-size: 12px;
+            white-space: nowrap;
+            top: 100%;
+            left: 0;
+            z-index: 10;
+            display: none;
+        }
+
+        .sheet-table td[data-comment]:hover::after {
+            display: block;
+        }
     </style>
 </head>
 <body>

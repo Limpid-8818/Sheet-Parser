@@ -1,3 +1,4 @@
+import html
 import os
 from string import Template
 
@@ -137,6 +138,21 @@ class SheetParser:
                                     mark_cell_processed(r, c)
                             break
 
+                    # 检查是否有超链接
+                    hyperlink = ws.cell(row=row_idx + 1, column=col_idx + 1).hyperlink
+                    if hyperlink:
+                        cell_value = f'<a href="{hyperlink.target}" target="_blank">{cell_value}</a>'
+
+                    # 1. 检查是否有注释
+                    comment = ws.cell(row=row_idx + 1, column=col_idx + 1).comment
+                    comment_text = (comment.text or '').strip() if comment else ''
+
+                    # 2. 只在有注释时才包 <span>
+                    if comment_text:
+                        # 先转义引号避免 HTML 注入
+                        safe_comment = html.escape(comment_text, quote=True)
+                        cell_value = f'<span class="comment" data-comment="{safe_comment}">{cell_value}</span>'
+
                     # 获取单元格样式
                     cell_style = self._get_cell_style(ws.cell(row=row_idx + 1, column=col_idx + 1))
 
@@ -146,7 +162,8 @@ class SheetParser:
                         'rowspan': rowspan,
                         'colspan': colspan,
                         'is_merged': is_merged,
-                        'style': cell_style
+                        'style': cell_style,
+                        'comment': comment_text
                     })
 
                 data.append(processed_row)
@@ -234,16 +251,17 @@ class SheetParser:
                 # 生成表头，考虑到应避免与Excel文件表头行格式产生冲突，此处仅对csv文件生效
                 table_html += '<thead><tr>'
                 for cell in header:
-                    cell_class = ''
-                    if cell['is_merged']:
-                        cell_class += ' merged-cell'
-                    if cell['type'] == 'numeric':
-                        cell_class += ' numeric-cell'
-                    elif cell['type'] == 'date':
-                        cell_class += ' date-cell'
-                    elif cell['type'] == 'boolean':
-                        cell_class += ' boolean-cell'
-                    table_html += f'<th class="{cell_class.strip()}" colspan="{cell["colspan"]}" rowspan="{cell["rowspan"]}" style="{cell["style"]}">{cell["value"]}</th>'
+                    cell_class = ' '.join([
+                        'merged-cell' if cell['is_merged'] else '',
+                        'numeric-cell' if cell['type'] == 'numeric' else '',
+                        'date-cell' if cell['type'] == 'date' else '',
+                        'boolean-cell' if cell['type'] == 'boolean' else ''
+                    ]).strip()
+                    table_html += (
+                        f'<th class="{cell_class}" '
+                        f'colspan="{cell["colspan"]}" rowspan="{cell["rowspan"]}" '
+                        f'style="{cell["style"]}">{cell["value"]}</th>'
+                    )
                 table_html += '</tr></thead>'
 
             # 生成数据行
@@ -251,20 +269,25 @@ class SheetParser:
             for row in sheet_data:
                 table_html += '<tr>'
                 for cell in row:
-                    cell_class = ''
-                    if cell['is_merged']:
-                        cell_class += ' merged-cell'
-                    if cell['type'] == 'numeric':
-                        cell_class += ' numeric-cell'
-                    elif cell['type'] == 'date':
-                        cell_class += ' date-cell'
-                    elif cell['type'] == 'boolean':
-                        cell_class += ' boolean-cell'
-                    table_html += f'<td class="{cell_class.strip()}" colspan="{cell["colspan"]}" rowspan="{cell["rowspan"]}" style="{cell["style"]}">{cell["value"]}</td>'
+                    cell_class = ' '.join([
+                        'merged-cell' if cell['is_merged'] else '',
+                        'numeric-cell' if cell['type'] == 'numeric' else '',
+                        'date-cell' if cell['type'] == 'date' else '',
+                        'boolean-cell' if cell['type'] == 'boolean' else '',
+                        'commented-cell' if cell.get('comment') else ''
+                    ]).strip()
+                    comment_attr = f' data-comment="{html.escape(cell.get("comment", ""), quote=True)}"' if cell.get(
+                        'comment') else ''
+                    table_html += (
+                        f'<td class="{cell_class}"{comment_attr} '
+                        f'colspan="{cell["colspan"]}" rowspan="{cell["rowspan"]}" '
+                        f'style="{cell["style"]}">{cell["value"]}</td>'
+                    )
                 table_html += '</tr>'
             table_html += '</tbody>'
+            table_html += '</table>'
+            table_html += '</div>'
 
-            table_html += '</table></div>'
             content += table_html
 
         return content
