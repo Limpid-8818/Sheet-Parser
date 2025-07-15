@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>示例表格</title>
+    <style>
+        .sheet-table {
+            border-collapse: collapse;
+            width: 100%;
+            margin-bottom: 20px;
+        }
+
+        .sheet-table th,
+        .sheet-table td {
+            border: none;
+            padding: 8px;
+            text-align: left;
+        }
+
+        /* 仅当单元格自身写了 border 时才生效 */
+        .sheet-table td[style*="border-left"],
+        .sheet-table th[style*="border-left"] {
+            border-left-style: initial;
+        }
+
+        .sheet-table td[style*="border-right"],
+        .sheet-table th[style*="border-right"] {
+            border-right-style: initial;
+        }
+
+        .sheet-table td[style*="border-top"],
+        .sheet-table th[style*="border-top"] {
+            border-top-style: initial;
+        }
+
+        .sheet-table td[style*="border-bottom"],
+        .sheet-table th[style*="border-bottom"] {
+            border-bottom-style: initial;
+        }
+
+        .sheet-table th {
+            background-color: #f2f2f2;
+        }
+
+        .merged-cell {
+            /*background-color: #f2f2f2;*/
+        }
+
+        .numeric-cell {
+            text-align: right;
+        }
+
+        .date-cell {
+            text-align: center;
+        }
+
+        .boolean-cell {
+            text-align: center;
+        }
+
+        .sheet-container {
+            margin-bottom: 40px;
+        }
+
+        .sheet-title {
+            font-size: 1.5em;
+            margin-bottom: 10px;
+        }
+
+        .sheet-table td[data-comment] {
+            position: relative;
+            cursor: pointer;
+        }
+
+        .sheet-table td[data-comment]::after {
+            content: attr(data-comment);
+            position: absolute;
+            background: #333;
+            color: #fff;
+            padding: 4px 6px;
+            border-radius: 3px;
+            font-size: 12px;
+            white-space: nowrap;
+            top: 100%;
+            left: 0;
+            z-index: 10;
+            display: none;
+        }
+
+        .sheet-table td[data-comment]:hover::after {
+            display: block;
+            cursor: pointer;
+        }
+
+        .sheet-table td[data-formula] {
+            position: relative;
+        }
+
+        .sheet-table td[data-formula]::before {
+            content: attr(data-formula);
+            position: absolute;
+            background: #007acc; /* 使用蓝色背景，与注释产生差异 */
+            color: #fff;
+            padding: 4px 6px;
+            border-radius: 3px;
+            font-size: 12px;
+            white-space: nowrap;
+            top: 100%;
+            left: 0;
+            z-index: 11;
+            margin-top: 3px;
+            display: none;
+        }
+
+        .sheet-table td[data-formula]:hover::before {
+            display: block;
+        }
+
+        /* 同时存在注释时，避免重叠，上下排列 */
+        .sheet-table td[data-comment][data-formula]::after {
+            margin-top: 30px;
+        }
+    </style>
+</head>
+<body>
+<h1>示例表格</h1>
+<div class="sheet-container"><h2 class="sheet-title">example</h2><table class="sheet-table"><tbody><tr><td class="" colspan="1" rowspan="1" style="font-size: 10.5pt; vertical-align: center">普通文本</td><td class="numeric-cell" colspan="1" rowspan="1" style="font-size: 10.5pt; vertical-align: center">12345</td><td class="date-cell" colspan="1" rowspan="1" style="font-size: 10.5pt; vertical-align: center">2025-07-15</td><td class="boolean-cell" colspan="1" rowspan="1" style="font-size: 11.0pt; vertical-align: center">True</td><td class="" colspan="1" rowspan="1" style="text-decoration: underline; color: #0000FF; font-size: 11.0pt; vertical-align: center"><a href="https://docs.qq.com/aio/DTk1wUUFHUkZCQkZN?p=kBrlITmKIZYap9DtpMNaox" target="_blank">2025腾讯犀牛鸟研学基地</a></td></tr><tr><td class="" colspan="1" rowspan="1" style="font-weight: bold; font-size: 11.0pt; vertical-align: center">加粗</td><td class="" colspan="1" rowspan="1" style="font-style: italic; font-size: 11.0pt; vertical-align: center">斜体</td><td class="" colspan="1" rowspan="1" style="text-decoration: underline; font-size: 11.0pt; vertical-align: center">下划线</td><td class="" colspan="1" rowspan="1" style="color: #FF0000; font-size: 11.0pt; vertical-align: center">红色字体</td><td class="" colspan="1" rowspan="1" style="font-size: 11.0pt; background-color: #FFFF00; vertical-align: center">黄色背景</td></tr><tr><td class="merged-cell" colspan="3" rowspan="1" style="font-size: 11.0pt; border-left: solid 1px black; border-right: solid 1px black; border-top: solid 1px black; border-bottom: solid 1px black; text-align: center; vertical-align: center">合并A3:C3</td><td class="merged-cell" colspan="2" rowspan="2" style="font-size: 11.0pt; border-left: solid 1px black; border-right: solid 1px black; border-top: solid 1px black; border-bottom: solid 1px black; text-align: center; vertical-align: center">合并D3:E4</td></tr><tr><td class="" colspan="1" rowspan="1" style="font-size: 11.0pt; border-top: solid 3px black; vertical-align: center">粗上框线</td><td class="" colspan="1" rowspan="1" style="font-size: 11.0pt; border-right: double 3px black; vertical-align: center">双右框线</td><td class="" colspan="1" rowspan="1" style="font-size: 11.0pt; border-bottom: dashed 1px black; vertical-align: center">虚下框线</td></tr><tr><td class="" colspan="1" rowspan="1" style="font-size: 11.0pt; vertical-align: center">公式</td><td class="numeric-cell    formula-cell" data-formula="=B1" colspan="1" rowspan="1" style="font-size: 11.0pt; vertical-align: center">12345</td><td class="date-cell   formula-cell" data-formula="=TODAY()" colspan="1" rowspan="1" style="font-size: 11.0pt; vertical-align: center">2025-07-15</td><td class="numeric-cell" colspan="1" rowspan="1" style="font-size: 11.0pt; vertical-align: center">100</td><td class="formula-cell" data-formula="=IF(D5&gt;50,&quot;大&quot;,&quot;小&quot;)" colspan="1" rowspan="1" style="font-size: 11.0pt; vertical-align: center">大</td></tr><tr><td class="" colspan="1" rowspan="1" style="font-size: 11.0pt; vertical-align: center">批注</td><td class="commented-cell" data-comment="user:
+这是批注" colspan="1" rowspan="1" style="font-size: 11.0pt; vertical-align: center"><span class="comment" data-comment="user:
+这是批注">此处有批注</span></td><td class="commented-cell formula-cell" data-comment="user:
+这是批注，这里也有公式" data-formula="=B6" colspan="1" rowspan="1" style="font-size: 11.0pt; vertical-align: center"><span class="comment" data-comment="user:
+这是批注，这里也有公式">此处有批注</span></td><td class="" colspan="1" rowspan="1" style="font-size: 11.0pt; border-left: solid 1px black; border-right: solid 1px black; border-top: solid 1px black; border-bottom: solid 1px black; text-align: center; vertical-align: center">文字居中</td><td class="" colspan="1" rowspan="1" style="font-size: 11.0pt; border-left: solid 1px black; border-right: solid 1px black; border-top: solid 1px black; border-bottom: solid 1px black; text-align: right; vertical-align: center">文字居右</td></tr><tr><td class="" colspan="1" rowspan="1" style="font-size: 11.0pt; vertical-align: center">空值</td><td class="formula-cell" data-formula="=NA()" colspan="1" rowspan="1" style="font-size: 11.0pt; vertical-align: center"></td><td class="formula-cell" data-formula="=&quot;&quot;" colspan="1" rowspan="1" style="font-size: 11.0pt; vertical-align: center"></td><td class="numeric-cell" colspan="1" rowspan="1" style="font-size: 11.0pt; vertical-align: center">0</td><td class="" colspan="1" rowspan="1" style="font-size: 10.5pt; vertical-align: center"></td></tr></tbody></table></div><div class="sheet-container"><h2 class="sheet-title">another</h2><table class="sheet-table"><tbody><tr><td class="" colspan="1" rowspan="1" style="font-size: 11.0pt; vertical-align: center">这是另一个sheet</td></tr></tbody></table></div>
+</body>
+</html>
