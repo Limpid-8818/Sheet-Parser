@@ -9,29 +9,59 @@
             width: 100%;
             margin-bottom: 20px;
         }
-        .sheet-table th, .sheet-table td {
-            border: 1px solid #ddd;
+
+        .sheet-table th,
+        .sheet-table td {
+            border: none;
             padding: 8px;
             text-align: left;
         }
+
+        /* 仅当单元格自身写了 border 时才生效 */
+        .sheet-table td[style*="border-left"],
+        .sheet-table th[style*="border-left"] {
+            border-left-style: solid !important;
+        }
+
+        .sheet-table td[style*="border-right"],
+        .sheet-table th[style*="border-right"] {
+            border-right-style: solid !important;
+        }
+
+        .sheet-table td[style*="border-top"],
+        .sheet-table th[style*="border-top"] {
+            border-top-style: solid !important;
+        }
+
+        .sheet-table td[style*="border-bottom"],
+        .sheet-table th[style*="border-bottom"] {
+            border-bottom-style: solid !important;
+        }
+
         .sheet-table th {
             background-color: #f2f2f2;
         }
+
         .merged-cell {
             background-color: #f2f2f2;
         }
+
         .numeric-cell {
             text-align: right;
         }
+
         .date-cell {
             text-align: center;
         }
+
         .boolean-cell {
             text-align: center;
         }
+
         .sheet-container {
             margin-bottom: 40px;
         }
+
         .sheet-title {
             font-size: 1.5em;
             margin-bottom: 10px;
@@ -39,7 +69,7 @@
     </style>
 </head>
 <body>
-    <h1>$title</h1>
-    $content
+<h1>$title</h1>
+$content
 </body>
 </html>

@@ -12,7 +12,8 @@ class SheetParser:
 
     def __init__(self):
         """初始化解析器"""
-        self.supported_formats = ['.xlsx', '.xls', '.csv', '.xlt', '.xltx', '.xlsb', '.xltm', '.xlam', '.et', '.ett', '.ets']
+        self.supported_formats = ['.xlsx', '.xls', '.csv', '.xlt', '.xltx', '.xlsb', '.xltm', '.xlam', '.et', '.ett',
+                                  '.ets']
         self.html_template_path = 'templates/basic_table.html'
         with open(self.html_template_path, 'r', encoding='utf-8') as f:
             self.html_template = Template(f.read())
@@ -174,6 +175,8 @@ class SheetParser:
             })
             return sheets_data
 
+        CSV_BORDER_STYLE = 'border: 1px solid #ddd;'
+
         # 处理表头
         header_row = rows[0]
         processed_header = []
@@ -185,7 +188,7 @@ class SheetParser:
                 'colspan': 1,
                 'rowspan': 1,
                 'is_merged': False,
-                'style': ''
+                'style': CSV_BORDER_STYLE
             })
 
         # 处理数据行
@@ -200,7 +203,7 @@ class SheetParser:
                     'rowspan': 1,
                     'colspan': 1,
                     'is_merged': False,
-                    'style': ''
+                    'style': CSV_BORDER_STYLE
                 })
             data.append(processed_row)
 
@@ -297,16 +300,10 @@ class SheetParser:
 
         # 边框样式
         border = cell.border
-        for side in ['left', 'right', 'top', 'bottom']:
-            side_obj = getattr(border, side)
-            if side_obj.style:
-                # 处理边框颜色
-                if side_obj.color and side_obj.color.rgb:
-                    border_color = self._get_rgb_style_value(side_obj.color.rgb)
-                    if border_color:
-                        style.append(f'border-{side}: {side_obj.style} {border_color}')
-                    else:
-                        style.append(f'border-{side}: {side_obj.style} black')
+        for side in ('left', 'right', 'top', 'bottom'):
+            css_border = self._get_side_style(getattr(border, side))
+            if css_border:
+                style.append(f'border-{side}: {css_border}')
 
         # 对齐方式
         alignment = cell.alignment
@@ -327,3 +324,14 @@ class SheetParser:
             # 去掉前两位透明度，取后6位
             return f"#{rgb[2:]}"
         return None
+
+    def _get_side_style(self, side):
+        """
+            将 openpyxl.styles.Side 对象转换成 CSS border 片段。
+            如果无边框，返回 None。
+        """
+        if not side or not side.style or side.style == 'none':
+            return None
+
+        color = self._get_rgb_style_value(side.color.rgb) or 'black'
+        return f'{side.style} {color}'
