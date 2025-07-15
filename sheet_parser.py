@@ -365,10 +365,39 @@ class SheetParser:
         if not side or not side.style or side.style == 'none':
             return None
 
+        style = self._get_css_style_border(side)
         color = self._get_rgb_style_value(side.color.rgb) or 'black'
-        return f'{side.style} {color}'
+        return f'{style} {color}'
 
-    def _get_formula(self, ws_formula, row, col):
+    @staticmethod
+    def _get_css_style_border(border):
+        border_style_map = {
+            'dashDot': 'dashed',
+            'dashDotDot': 'dashed',
+            'dashed': 'dashed',
+            'dotted': 'dotted',
+            'double': 'double',
+            'hair': 'solid',
+            'medium': 'solid',
+            'mediumDashDot': 'dashed',
+            'mediumDashDotDot': 'dashed',
+            'mediumDashed': 'dashed',
+            'slantDashDot': 'dashed',
+            'thick': 'solid',
+            'thin': 'solid'
+        }
+        border_width_map = {
+            'thin': '1px',
+            'medium': '2px',
+            'thick': '3px',
+            'hair': '0.5px',
+            'double': '3px'
+        }
+        width_key = border.style if border.style in {'thin', 'medium', 'thick', 'hair', 'double'} else 'thin'
+        return border_style_map.get(border.style, 'solid') + ' ' + border_width_map.get(width_key, '1px')
+
+    @staticmethod
+    def _get_formula(ws_formula, row, col):
         """返回公式字符串，若非公式则返回 None"""
         cell = ws_formula.cell(row=row, column=col)
         if cell.data_type == 'f':
