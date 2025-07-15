@@ -89,6 +89,36 @@
 
         .sheet-table td[data-comment]:hover::after {
             display: block;
+            cursor: pointer;
+        }
+
+        .sheet-table td[data-formula] {
+            position: relative;
+        }
+
+        .sheet-table td[data-formula]::before {
+            content: attr(data-formula);
+            position: absolute;
+            background: #007acc; /* 使用蓝色背景，与注释产生差异 */
+            color: #fff;
+            padding: 4px 6px;
+            border-radius: 3px;
+            font-size: 12px;
+            white-space: nowrap;
+            top: 100%;
+            left: 0;
+            z-index: 11;
+            margin-top: 3px;
+            display: none;
+        }
+
+        .sheet-table td[data-formula]:hover::before {
+            display: block;
+        }
+
+        /* 同时存在注释时，避免重叠，上下排列 */
+        .sheet-table td[data-comment][data-formula]::after {
+            margin-top: 30px;
         }
     </style>
 </head>

@@ -24,6 +24,10 @@ def get_default_title(file_path):
 
 def determine_data_type(value):
     """确定单元格数据类型"""
+    # 处理布尔类型
+    if isinstance(value, bool):
+        return 'boolean'
+
     # 处理pandas/numpy的数值类型
     if isinstance(value, (int, float)):
         return 'numeric'
@@ -31,10 +35,6 @@ def determine_data_type(value):
     # 处理日期类型
     if isinstance(value, (datetime, pd.Timestamp)):
         return 'date'
-
-    # 处理布尔类型
-    if isinstance(value, bool):
-        return 'boolean'
 
     # 尝试将字符串解析为数值
     try:

@@ -155,6 +155,9 @@ class SheetParser:
                         safe_comment = html.escape(comment_text, quote=True)
                         cell_value = f'<span class="comment" data-comment="{safe_comment}">{cell_value}</span>'
 
+                    # 检查公式
+                    formula = self._get_formula(ws_with_formula, row_idx + 1, col_idx + 1)
+
                     # 获取单元格样式
                     cell_style = self._get_cell_style(ws.cell(row=row_idx + 1, column=col_idx + 1))
 
@@ -165,7 +168,8 @@ class SheetParser:
                         'colspan': colspan,
                         'is_merged': is_merged,
                         'style': cell_style,
-                        'comment': comment_text
+                        'comment': comment_text,
+                        'formula': formula
                     })
 
                 data.append(processed_row)
@@ -276,12 +280,15 @@ class SheetParser:
                         'numeric-cell' if cell['type'] == 'numeric' else '',
                         'date-cell' if cell['type'] == 'date' else '',
                         'boolean-cell' if cell['type'] == 'boolean' else '',
-                        'commented-cell' if cell.get('comment') else ''
+                        'commented-cell' if cell.get('comment') else '',
+                        'formula-cell' if cell.get('formula') else ''
                     ]).strip()
                     comment_attr = f' data-comment="{html.escape(cell.get("comment", ""), quote=True)}"' if cell.get(
                         'comment') else ''
+                    formula_attr = f' data-formula="{html.escape(cell.get("formula", ""), quote=True)}"' if cell.get(
+                        "formula") else ''
                     table_html += (
-                        f'<td class="{cell_class}"{comment_attr} '
+                        f'<td class="{cell_class}"{comment_attr}{formula_attr} '
                         f'colspan="{cell["colspan"]}" rowspan="{cell["rowspan"]}" '
                         f'style="{cell["style"]}">{cell["value"]}</td>'
                     )
@@ -360,3 +367,10 @@ class SheetParser:
 
         color = self._get_rgb_style_value(side.color.rgb) or 'black'
         return f'{side.style} {color}'
+
+    def _get_formula(self, ws_formula, row, col):
+        """返回公式字符串，若非公式则返回 None"""
+        cell = ws_formula.cell(row=row, column=col)
+        if cell.data_type == 'f':
+            return cell.value
+        return None
