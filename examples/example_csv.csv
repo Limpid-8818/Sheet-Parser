@@ -1,0 +1,6 @@
+Name,Age,JoinDate,IsActive,Salary
+Alice,25,2023-11-01,true,1234.56
+Bob,,2024-01-15,false,0
+Charlie,30,,TRUE,12345.67
+Diana,28,2024/07/16,FALSE,
+,,,,Empty row

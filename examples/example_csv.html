@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>CSV示例表格</title>
+    <style>
+        .sheet-table {
+            border-collapse: collapse;
+            width: 100%;
+            margin-bottom: 20px;
+        }
+
+        .sheet-table th,
+        .sheet-table td {
+            border: none;
+            padding: 8px;
+            text-align: left;
+        }
+
+        /* 仅当单元格自身写了 border 时才生效 */
+        .sheet-table td[style*="border-left"],
+        .sheet-table th[style*="border-left"] {
+            border-left-style: initial;
+        }
+
+        .sheet-table td[style*="border-right"],
+        .sheet-table th[style*="border-right"] {
+            border-right-style: initial;
+        }
+
+        .sheet-table td[style*="border-top"],
+        .sheet-table th[style*="border-top"] {
+            border-top-style: initial;
+        }
+
+        .sheet-table td[style*="border-bottom"],
+        .sheet-table th[style*="border-bottom"] {
+            border-bottom-style: initial;
+        }
+
+        .sheet-table th {
+            background-color: #f2f2f2;
+        }
+
+        .merged-cell {
+            /*background-color: #f2f2f2;*/
+        }
+
+        .numeric-cell {
+            text-align: right;
+        }
+
+        .date-cell {
+            text-align: center;
+        }
+
+        .boolean-cell {
+            text-align: center;
+        }
+
+        .sheet-container {
+            margin-bottom: 40px;
+        }
+
+        .sheet-title {
+            font-size: 1.5em;
+            margin-bottom: 10px;
+        }
+
+        .sheet-table td[data-comment] {
+            position: relative;
+            cursor: pointer;
+        }
+
+        .sheet-table td[data-comment]::after {
+            content: attr(data-comment);
+            position: absolute;
+            background: #333;
+            color: #fff;
+            padding: 4px 6px;
+            border-radius: 3px;
+            font-size: 12px;
+            white-space: nowrap;
+            top: 100%;
+            left: 0;
+            z-index: 10;
+            display: none;
+        }
+
+        .sheet-table td[data-comment]:hover::after {
+            display: block;
+            cursor: pointer;
+        }
+
+        .sheet-table td[data-formula] {
+            position: relative;
+        }
+
+        .sheet-table td[data-formula]::before {
+            content: attr(data-formula);
+            position: absolute;
+            background: #007acc; /* 使用蓝色背景，与注释产生差异 */
+            color: #fff;
+            padding: 4px 6px;
+            border-radius: 3px;
+            font-size: 12px;
+            white-space: nowrap;
+            top: 100%;
+            left: 0;
+            z-index: 11;
+            margin-top: 3px;
+            display: none;
+        }
+
+        .sheet-table td[data-formula]:hover::before {
+            display: block;
+        }
+
+        /* 同时存在注释时，避免重叠，上下排列 */
+        .sheet-table td[data-comment][data-formula]::after {
+            margin-top: 30px;
+        }
+    </style>
+</head>
+<body>
+<h1>CSV示例表格</h1>
+<div class="sheet-container"><h2 class="sheet-title">example_csv.csv</h2><table class="sheet-table"><thead><tr><th class="" colspan="1" rowspan="1" style="border: 1px solid #ddd;">Name</th><th class="" colspan="1" rowspan="1" style="border: 1px solid #ddd;">Age</th><th class="" colspan="1" rowspan="1" style="border: 1px solid #ddd;">JoinDate</th><th class="" colspan="1" rowspan="1" style="border: 1px solid #ddd;">IsActive</th><th class="" colspan="1" rowspan="1" style="border: 1px solid #ddd;">Salary</th></tr></thead><tbody><tr><td class="" colspan="1" rowspan="1" style="border: 1px solid #ddd;">Alice</td><td class="numeric-cell" colspan="1" rowspan="1" style="border: 1px solid #ddd;">25</td><td class="date-cell" colspan="1" rowspan="1" style="border: 1px solid #ddd;">2023-11-01</td><td class="boolean-cell" colspan="1" rowspan="1" style="border: 1px solid #ddd;">true</td><td class="numeric-cell" colspan="1" rowspan="1" style="border: 1px solid #ddd;">1234.56</td></tr><tr><td class="" colspan="1" rowspan="1" style="border: 1px solid #ddd;">Bob</td><td class="" colspan="1" rowspan="1" style="border: 1px solid #ddd;"></td><td class="date-cell" colspan="1" rowspan="1" style="border: 1px solid #ddd;">2024-01-15</td><td class="boolean-cell" colspan="1" rowspan="1" style="border: 1px solid #ddd;">false</td><td class="numeric-cell" colspan="1" rowspan="1" style="border: 1px solid #ddd;">0</td></tr><tr><td class="" colspan="1" rowspan="1" style="border: 1px solid #ddd;">Charlie</td><td class="numeric-cell" colspan="1" rowspan="1" style="border: 1px solid #ddd;">30</td><td class="" colspan="1" rowspan="1" style="border: 1px solid #ddd;"></td><td class="boolean-cell" colspan="1" rowspan="1" style="border: 1px solid #ddd;">TRUE</td><td class="numeric-cell" colspan="1" rowspan="1" style="border: 1px solid #ddd;">12345.67</td></tr><tr><td class="" colspan="1" rowspan="1" style="border: 1px solid #ddd;">Diana</td><td class="numeric-cell" colspan="1" rowspan="1" style="border: 1px solid #ddd;">28</td><td class="" colspan="1" rowspan="1" style="border: 1px solid #ddd;">2024/07/16</td><td class="boolean-cell" colspan="1" rowspan="1" style="border: 1px solid #ddd;">FALSE</td><td class="" colspan="1" rowspan="1" style="border: 1px solid #ddd;"></td></tr><tr><td class="" colspan="1" rowspan="1" style="border: 1px solid #ddd;"></td><td class="" colspan="1" rowspan="1" style="border: 1px solid #ddd;"></td><td class="" colspan="1" rowspan="1" style="border: 1px solid #ddd;"></td><td class="" colspan="1" rowspan="1" style="border: 1px solid #ddd;"></td><td class="" colspan="1" rowspan="1" style="border: 1px solid #ddd;">Empty row</td></tr></tbody></table></div>
+</body>
+</html>
